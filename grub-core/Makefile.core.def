@@ -1305,6 +1305,11 @@ module = {
 };
 
 module = {
+  name = lynxfs;
+  common = fs/lynxfs.c;
+};
+
+module = {
   name = fat;
   common = fs/fat.c;
 };
