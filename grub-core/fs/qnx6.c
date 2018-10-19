@@ -41,6 +41,7 @@
 #include <grub/mm.h>
 #include <grub/misc.h>
 #include <grub/disk.h>
+#include <grub/partition.h>
 #include <grub/dl.h>
 #include <grub/types.h>
 #include <grub/fshelp.h>
