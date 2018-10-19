@@ -41,7 +41,6 @@
 #include <grub/mm.h>
 #include <grub/misc.h>
 #include <grub/disk.h>
-#include <grub/partition.h>
 #include <grub/dl.h>
 #include <grub/types.h>
 #include <grub/fshelp.h>
@@ -571,11 +570,8 @@ qnx6_get_root_blocklist(grub_qnx6_data_t *data,
 static grub_err_t
 qnx6_parse_superblocks(grub_qnx6_data_t *data)
 {
-   grub_uint64_t fs_sec  = (data->disk->partition ?
-                            data->disk->partition->len :
-                            data->disk->total_sectors);
    grub_uint64_t sb1_sec = QNX6_BOOTBLOCK_SIZE >> GRUB_DISK_SECTOR_BITS;
-   grub_uint64_t sb2_sec = (fs_sec & ~(QNX6_SUPERBLOCK_SECTORS - 1)) - QNX6_SUPERBLOCK_SECTORS;
+   grub_uint64_t sb2_sec = (grub_disk_get_size(data->disk) & ~(QNX6_SUPERBLOCK_SECTORS - 1)) - QNX6_SUPERBLOCK_SECTORS;
    bool          sb1_ok, sb2_ok;
 
    grub_errno = GRUB_ERR_NONE;
