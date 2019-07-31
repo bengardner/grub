@@ -295,6 +295,41 @@ grub_normal_execute (const char *config, int nested, int batch)
     }
 }
 
+static grub_err_t
+dummy_file_getline(char **line, int cont __attribute__ ((unused)),
+                   void *data __attribute__ ((unused)))
+{
+   *line = 0;
+   return GRUB_ERR_NONE;
+}
+
+static void wabtec_los178_hack(void)
+{
+   const char *wabtec_mb_kernels[] = {
+      "lynx.os",        // LOS178
+      ".boot/boot.ifs", // QNX 7 - should scan for the first file named '.ifs'
+      ".boot",          // QNX 6.3
+      NULL
+   };
+   char line[80];
+   int idx;
+
+   grub_printf("Scanning for known kernels\n");
+
+   /* try 'multiboot' and then 'boot' on each kernel */
+   for (idx = 0; wabtec_mb_kernels[idx] != NULL; idx++)
+   {
+      grub_snprintf(line, sizeof(line), "multiboot /%s", wabtec_mb_kernels[idx]);
+      if (grub_normal_parse_line(line, dummy_file_getline, NULL) == GRUB_ERR_NONE)
+      {
+         grub_strcpy(line, "boot");
+         grub_normal_parse_line(line, dummy_file_getline, NULL);
+      }
+   }
+
+   grub_printf("Scan failed.\n");
+}
+
 /* This starts the normal mode.  */
 void
 grub_enter_normal_mode (const char *config)
@@ -302,6 +337,10 @@ grub_enter_normal_mode (const char *config)
   grub_boot_time ("Entering normal mode");
   nested_level++;
   grub_normal_execute (config, 0, 0);
+
+/* HACK: this looks like the place to auto-create a config file if one was not found */
+  wabtec_los178_hack();
+
   grub_boot_time ("Entering shell");
   grub_cmdline_run (0, 1);
   nested_level--;
