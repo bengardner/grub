@@ -151,6 +151,32 @@ find_header (char *buffer, grub_ssize_t len)
   return NULL;
 }
 
+/**
+ * Hack in a 32-byte multiboot header at offset 0x0f00.
+ * Load address is 0x00101000, start address is 0x00101020.
+ *
+ * [0] = 0x1badb002 - MB tag
+ * [1] = 0x00010000 - flags (b16 for a.out)
+ * [2] = 0xe4514ff4 - checksum
+ * [3] = 0x00101f00 - mb1 hdr offset
+ * [4] = 0x00101000 - load address
+ * [5] = 0x00000000 - load end (use file size)
+ * [6] = 0x00000000 - bss_end_addr (omitted)
+ * [7] = 0x00101020 - entry address
+ */
+static void patch_old_los178(char *buffer, grub_ssize_t len)
+{
+   const grub_uint8_t los178_mb1[32] = {
+      0x02, 0xb0, 0xad, 0x1b, 0x00, 0x00, 0x01, 0x00, 0xfe, 0x4f, 0x51, 0xe4, 0x00, 0x1f, 0x10, 0x00,
+      0x00, 0x10, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x10, 0x10, 0x00,
+   };
+
+   if (len >= 0x0f20)
+   {
+      grub_memcpy(buffer + 0x0f00, los178_mb1, sizeof(los178_mb1));
+   }
+}
+
 grub_err_t
 grub_multiboot_load (grub_file_t file, const char *filename)
 {
@@ -174,6 +200,14 @@ grub_multiboot_load (grub_file_t file, const char *filename)
     }
 
   header = find_header (buffer, len);
+
+  /* HACK: add support for booting old los178 KDIs that do not have a multiboot header */
+  if ((header == 0) && (grub_strstr(filename, "/lynx.os") != NULL))
+  {
+     grub_printf("Patching %s\n", filename);
+     patch_old_los178(buffer, len);
+     header = find_header(buffer, len);
+  }
 
   if (header == 0)
     {
